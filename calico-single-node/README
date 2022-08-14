@@ -1,3 +1,11 @@
+Install Kind k8s
+Reference: https://kind.sigs.k8s.io/docs/user/quick-start/#installation
+
+- curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.14.0/kind-linux-amd64
+- chmod +x ./kind
+- sudo mv ./kind /usr/local/bin/kind
+
+
 Use Kind k8s single node
 Reference: https://projectcalico.docs.tigera.io/getting-started/kubernetes/quickstart
 
@@ -60,3 +68,6 @@ Create an egress rule for nslookup
 - kubectl create -f calico-policy-allow-egress.yaml
 - nslookup nginx
 
+
+Kubernetes policy, demo
+Reference: https://projectcalico.docs.tigera.io/security/tutorials/kubernetes-policy-demo/kubernetes-demo
