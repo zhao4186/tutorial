@@ -1,0 +1,57 @@
+Use Kind k8s single node
+Reference: https://projectcalico.docs.tigera.io/getting-started/kubernetes/quickstart
+
+Create Kind k8s sungle node cluster
+- create kind k8s cluster config file kindCluster.yaml 
+  configure podSubnet and serviceSubnet
+  disable default container network interface(CNI) plugin
+- create cluster
+  kind create cluster  --name wslkind --config kindCluster.yaml --kubeconfig /mnt/c/Users/zhao4/.kube/config
+- export KUBECONFIG
+  export KUBECONFIG=/mnt/c/Users/zhao4/.kube/config
+
+Check pods in the cluster
+- kubectl get pods -A -o wide
+  You will see coredns-* pods are in pending status because there is no CNI and coredns-* can't get IP.
+
+Install Calico CNI
+- Download
+  wget https://projectcalico.docs.tigera.io/manifests/tigera-operator.yaml
+  wget https://projectcalico.docs.tigera.io/manifests/custom-resources.yaml
+- modify custom-resources.yaml to set CIDR of IPPOOL to the same as podSubnet
+- create Calico CNI plugin
+  kubectl create -f tigera-operator.yaml
+  kubectl create -f custom-resources.yaml
+
+Check pods in the cluster
+- kubectl get pods -A -o wide
+  You will see all pods are running after Calico CNI running
+
+Check network policy
+- check network policy and no policy now
+  kubectl get networkpolicy -A
+
+Create nginx in a new namespace policy-demo
+- create a namespace
+  kubectl create ns policy-demo
+- create a nginx pod
+  kubectl create deployment --namespace=policy-demo nginx --image=nginx
+- expose nginx pod on port 80
+  kubectl expose --namespace=policy-demo deployment nginx --port=80
+
+Create a busybox to test nginx access
+- create a busybox pods to access nginx
+  kubectl run --namespace=policy-demo access --rm -ti --image busybox /bin/sh
+- run "wget -q --timeout=5 nginx -O -" inside busybox pod and you will see you can connect to nginx from busybox because there is no network policy and Calico allows all traffic
+
+Create deny network policy
+- add a network policy without any matching pods which will deny all traffic
+  kubectl create -f calico-policy-deny.yaml
+- create a busybox pods to access nginx                                                                                                                                                 kubectl run --namespace=policy-demo access --rm -ti --image busybox /bin/sh                                                                                                         - run "wget -q --timeout=5 nginx -O -" inside busybox pod and you will see timeout because Calico policy blocks traffic
+
+Create an ingress rule for nginx
+- add a network policy to add ingress rule for nginx
+  kubectl create -f calico-policy-enable-nginx-ingress.yaml
+- create a busybox pods to access nginx
+  kubectl run --namespace=policy-demo access --rm -ti --image busybox /bin/sh                                                                                                         
+- run "wget -q --timeout=5 nginx -O -" inside busybox pod and you will see successful access
